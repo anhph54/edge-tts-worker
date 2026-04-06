@@ -2,7 +2,7 @@
 
 Deploy Microsoft Edge TTS as an OpenAI-compatible API on your own Cloudflare account. Free.
 
-[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/user/edge-tts-worker)
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/sofish/edge-tts-worker)
 
 ## Deploy
 
