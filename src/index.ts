@@ -78,6 +78,21 @@ function escapeXml(text: string): string {
     .replace(/'/g, "&apos;");
 }
 
+function detectVoice(text: string): string {
+  let zh = 0, ja = 0, ko = 0;
+  for (const ch of text) {
+    const c = ch.codePointAt(0)!;
+    if (c >= 0x4E00 && c <= 0x9FFF || c >= 0x3400 && c <= 0x4DBF) zh++; // CJK ideographs
+    if (c >= 0x3040 && c <= 0x309F || c >= 0x30A0 && c <= 0x30FF) ja++; // Hiragana + Katakana
+    if (c >= 0xAC00 && c <= 0xD7AF || c >= 0x1100 && c <= 0x11FF) ko++; // Hangul
+  }
+  // Japanese text often mixes kanji with kana — if any kana present, it's Japanese
+  if (ja > 0) return "ja-JP-NanamiNeural";
+  if (ko > 0) return "ko-KR-SunHiNeural";
+  if (zh > 0) return "zh-CN-XiaoxiaoNeural";
+  return "en-US-EmmaMultilingualNeural";
+}
+
 function mkssml(voice: string, rate: string, volume: string, pitch: string, text: string): string {
   return `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'><voice name='${voice}'><prosody pitch='${pitch}' rate='${rate}' volume='${volume}'>${text}</prosody></voice></speak>`;
 }
@@ -283,7 +298,7 @@ async function handleSpeech(request: Request, env: Env, ctx: ExecutionContext): 
     return errorResponse("'input' is required and must be a non-empty string", 400);
   }
 
-  const voice = body.voice || "en-US-EmmaMultilingualNeural";
+  const voice = body.voice || detectVoice(input);
   const speed = Math.min(2, Math.max(0.5, body.speed ?? 1.0));
   const rateValue = Math.round((speed - 1) * 100);
   const rate = rateValue >= 0 ? `+${rateValue}%` : `${rateValue}%`;
@@ -452,6 +467,63 @@ function handleIndex(): Response {
   });
 }
 
+async function handleWebSocket(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  const upgrade = request.headers.get("Upgrade");
+  if (upgrade !== "websocket") {
+    return errorResponse("Expected WebSocket upgrade", 426);
+  }
+
+  // Auth check via query param: wss://host/v1/ws?token=<key>
+  if (env.API_KEY) {
+    const url = new URL(request.url);
+    const token = url.searchParams.get("token");
+    if (token !== env.API_KEY) {
+      return errorResponse("Invalid API key", 401);
+    }
+  }
+
+  const pair = new WebSocketPair();
+  const [client, server] = Object.values(pair);
+  server.accept();
+
+  server.addEventListener("message", (event) => {
+    const handle = async () => {
+      let msg: { input?: string; voice?: string; speed?: number };
+      try {
+        msg = JSON.parse(event.data as string);
+      } catch {
+        server.send(JSON.stringify({ event: "error", message: "Invalid JSON" }));
+        return;
+      }
+
+      const input = msg.input;
+      if (!input || typeof input !== "string" || input.trim() === "") {
+        server.send(JSON.stringify({ event: "error", message: "'input' is required" }));
+        return;
+      }
+
+      const voice = msg.voice || detectVoice(input);
+      const speed = Math.min(2, Math.max(0.5, msg.speed ?? 1.0));
+      const rateValue = Math.round((speed - 1) * 100);
+      const rate = rateValue >= 0 ? `+${rateValue}%` : `${rateValue}%`;
+
+      try {
+        for await (const audioData of ttsStream(input, voice, rate)) {
+          server.send(audioData);
+        }
+        server.send(JSON.stringify({ event: "done" }));
+      } catch (e: any) {
+        server.send(JSON.stringify({ event: "error", message: e.message }));
+      }
+    };
+    ctx.waitUntil(handle());
+  });
+
+  server.addEventListener("close", () => server.close());
+
+  return new Response(null, { status: 101, webSocket: client });
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
@@ -466,6 +538,10 @@ export default {
 
     if (url.pathname === "/v1/audio/speech" && request.method === "POST") {
       return handleSpeech(request, env, ctx);
+    }
+
+    if (url.pathname === "/v1/ws") {
+      return handleWebSocket(request, env, ctx);
     }
 
     if (url.pathname === "/v1/voices" && request.method === "GET") {
