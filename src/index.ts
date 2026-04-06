@@ -322,7 +322,6 @@ async function handleVoices(request: Request, env: Env): Promise<Response> {
     const resp = await fetch(url, {
       headers: {
         "User-Agent": USER_AGENT,
-        "Accept-Encoding": "gzip, deflate, br, zstd",
         "Accept-Language": "en-US,en;q=0.9",
         "Authority": "speech.platform.bing.com",
         "Sec-CH-UA": `" Not;A Brand";v="99", "Microsoft Edge";v="${CHROMIUM_MAJOR_VERSION}", "Chromium";v="${CHROMIUM_MAJOR_VERSION}"`,
