@@ -40,11 +40,43 @@ curl -X POST https://your-worker.workers.dev/v1/audio/speech \
 |---|---|---|
 | `model` | Ignored (accepted for compatibility) | — |
 | `input` | Text to synthesize (required) | — |
-| `voice` | Edge TTS voice name | `en-US-EmmaMultilingualNeural` |
+| `voice` | Edge TTS voice name (auto-detected if omitted) | auto |
 | `speed` | Speech rate, 0.5–2.0 | `1.0` |
 | `response_format` | Only `mp3` supported | `mp3` |
 
+If `voice` is omitted, it auto-detects the language from the input text:
+
+| Language | Voice |
+|---|---|
+| Chinese | `zh-CN-XiaoxiaoNeural` |
+| Japanese | `ja-JP-NanamiNeural` |
+| Korean | `ko-KR-SunHiNeural` |
+| English / other | `en-US-EmmaMultilingualNeural` |
+
 If `API_KEY` is set, include `Authorization: Bearer <key>` header.
+
+### `GET /v1/ws`
+
+WebSocket endpoint for reading apps. Keeps a persistent connection for sequential TTS requests.
+
+```
+wss://your-worker.workers.dev/v1/ws
+```
+
+If `API_KEY` is set, pass it as a query parameter: `wss://your-worker.workers.dev/v1/ws?token=<key>`
+
+**Send** (JSON text message):
+
+```json
+{"input": "Text to read", "voice": "en-US-EmmaMultilingualNeural", "speed": 1.0}
+```
+
+**Receive**:
+- Binary messages — MP3 audio chunks, stream directly to your audio player
+- `{"event": "done"}` — synthesis complete, safe to send next text
+- `{"event": "error", "message": "..."}` — error occurred
+
+**Reading app flow**: connect once → send paragraph → receive audio chunks → play → on `done`, send next paragraph → repeat.
 
 ### `GET /v1/voices`
 
