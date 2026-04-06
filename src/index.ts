@@ -78,19 +78,26 @@ function escapeXml(text: string): string {
     .replace(/'/g, "&apos;");
 }
 
-function detectVoice(text: string): string {
+const VOICE_MAP: Record<string, { female: string; male: string }> = {
+  zh: { female: "zh-CN-XiaoxiaoNeural", male: "zh-CN-YunxiNeural" },
+  ja: { female: "ja-JP-NanamiNeural", male: "ja-JP-KeitaNeural" },
+  ko: { female: "ko-KR-SunHiNeural", male: "ko-KR-InJoonNeural" },
+  en: { female: "en-US-EmmaMultilingualNeural", male: "en-US-AndrewMultilingualNeural" },
+};
+
+function detectVoice(text: string, gender: string = "female"): string {
   let zh = 0, ja = 0, ko = 0;
   for (const ch of text) {
     const c = ch.codePointAt(0)!;
-    if (c >= 0x4E00 && c <= 0x9FFF || c >= 0x3400 && c <= 0x4DBF) zh++; // CJK ideographs
-    if (c >= 0x3040 && c <= 0x309F || c >= 0x30A0 && c <= 0x30FF) ja++; // Hiragana + Katakana
-    if (c >= 0xAC00 && c <= 0xD7AF || c >= 0x1100 && c <= 0x11FF) ko++; // Hangul
+    if (c >= 0x4E00 && c <= 0x9FFF || c >= 0x3400 && c <= 0x4DBF) zh++;
+    if (c >= 0x3040 && c <= 0x309F || c >= 0x30A0 && c <= 0x30FF) ja++;
+    if (c >= 0xAC00 && c <= 0xD7AF || c >= 0x1100 && c <= 0x11FF) ko++;
   }
-  // Japanese text often mixes kanji with kana — if any kana present, it's Japanese
-  if (ja > 0) return "ja-JP-NanamiNeural";
-  if (ko > 0) return "ko-KR-SunHiNeural";
-  if (zh > 0) return "zh-CN-XiaoxiaoNeural";
-  return "en-US-EmmaMultilingualNeural";
+  const g = gender === "male" ? "male" : "female";
+  if (ja > 0) return VOICE_MAP.ja[g];
+  if (ko > 0) return VOICE_MAP.ko[g];
+  if (zh > 0) return VOICE_MAP.zh[g];
+  return VOICE_MAP.en[g];
 }
 
 function mkssml(voice: string, rate: string, volume: string, pitch: string, text: string): string {
@@ -284,6 +291,7 @@ async function handleSpeech(request: Request, env: Env, ctx: ExecutionContext): 
     model?: string;
     input?: string;
     voice?: string;
+    gender?: string;
     speed?: number;
     response_format?: string;
   };
@@ -298,7 +306,7 @@ async function handleSpeech(request: Request, env: Env, ctx: ExecutionContext): 
     return errorResponse("'input' is required and must be a non-empty string", 400);
   }
 
-  const voice = body.voice || detectVoice(input);
+  const voice = body.voice || detectVoice(input, body.gender);
   const speed = Math.min(2, Math.max(0.5, body.speed ?? 1.0));
   const rateValue = Math.round((speed - 1) * 100);
   const rate = rateValue >= 0 ? `+${rateValue}%` : `${rateValue}%`;
@@ -488,7 +496,7 @@ async function handleWebSocket(request: Request, env: Env, ctx: ExecutionContext
 
   server.addEventListener("message", (event) => {
     const handle = async () => {
-      let msg: { input?: string; voice?: string; speed?: number };
+      let msg: { input?: string; voice?: string; gender?: string; speed?: number };
       try {
         msg = JSON.parse(event.data as string);
       } catch {
@@ -502,7 +510,7 @@ async function handleWebSocket(request: Request, env: Env, ctx: ExecutionContext
         return;
       }
 
-      const voice = msg.voice || detectVoice(input);
+      const voice = msg.voice || detectVoice(input, msg.gender);
       const speed = Math.min(2, Math.max(0.5, msg.speed ?? 1.0));
       const rateValue = Math.round((speed - 1) * 100);
       const rate = rateValue >= 0 ? `+${rateValue}%` : `${rateValue}%`;

@@ -25,7 +25,16 @@ Synthesize text to speech. Returns streaming `audio/mpeg` data.
 ```
 
 - `input` (required): The text to synthesize.
-- `voice` (optional): Edge TTS voice short name. If omitted, auto-detected from text — Chinese → `zh-CN-XiaoxiaoNeural`, Japanese → `ja-JP-NanamiNeural`, Korean → `ko-KR-SunHiNeural`, otherwise `en-US-EmmaMultilingualNeural`. Get the full list from `GET /v1/voices`.
+- `voice` (optional): Edge TTS voice short name. If omitted, auto-detected from text using `gender`. Get the full list from `GET /v1/voices`.
+- `gender` (optional): `"female"` or `"male"`. Only used when `voice` is omitted. Default: `"female"`. Auto-detected voices:
+
+  | Language | Female | Male |
+  |---|---|---|
+  | Chinese | `zh-CN-XiaoxiaoNeural` | `zh-CN-YunxiNeural` |
+  | Japanese | `ja-JP-NanamiNeural` | `ja-JP-KeitaNeural` |
+  | Korean | `ko-KR-SunHiNeural` | `ko-KR-InJoonNeural` |
+  | English / other | `en-US-EmmaMultilingualNeural` | `en-US-AndrewMultilingualNeural` |
+
 - `speed` (optional): Float between 0.5 and 2.0. Default: `1.0`. Converted internally to Edge TTS rate format (e.g. 1.5 becomes `+50%`).
 - `model` (optional): Accepted for OpenAI compatibility but ignored.
 - `response_format` (optional): Only `mp3` is supported.
@@ -91,6 +100,7 @@ wss://your-worker.workers.dev/v1/ws?token=YOUR_API_KEY  # with auth
 
 - `input` (required): The text to synthesize.
 - `voice` (optional): Auto-detected from text if omitted.
+- `gender` (optional): `"female"` or `"male"`. Used when `voice` is omitted. Default: `"female"`.
 - `speed` (optional): Float between 0.5 and 2.0. Default: `1.0`.
 
 **Receive**:

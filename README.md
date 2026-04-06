@@ -41,17 +41,18 @@ curl -X POST https://your-worker.workers.dev/v1/audio/speech \
 | `model` | Ignored (accepted for compatibility) | — |
 | `input` | Text to synthesize (required) | — |
 | `voice` | Edge TTS voice name (auto-detected if omitted) | auto |
+| `gender` | `"female"` or `"male"` (used when `voice` is omitted) | `female` |
 | `speed` | Speech rate, 0.5–2.0 | `1.0` |
 | `response_format` | Only `mp3` supported | `mp3` |
 
 If `voice` is omitted, it auto-detects the language from the input text:
 
-| Language | Voice |
-|---|---|
-| Chinese | `zh-CN-XiaoxiaoNeural` |
-| Japanese | `ja-JP-NanamiNeural` |
-| Korean | `ko-KR-SunHiNeural` |
-| English / other | `en-US-EmmaMultilingualNeural` |
+| Language | Female | Male |
+|---|---|---|
+| Chinese | `zh-CN-XiaoxiaoNeural` | `zh-CN-YunxiNeural` |
+| Japanese | `ja-JP-NanamiNeural` | `ja-JP-KeitaNeural` |
+| Korean | `ko-KR-SunHiNeural` | `ko-KR-InJoonNeural` |
+| English / other | `en-US-EmmaMultilingualNeural` | `en-US-AndrewMultilingualNeural` |
 
 If `API_KEY` is set, include `Authorization: Bearer <key>` header.
 
@@ -68,7 +69,7 @@ If `API_KEY` is set, pass it as a query parameter: `wss://your-worker.workers.de
 **Send** (JSON text message):
 
 ```json
-{"input": "Text to read", "voice": "en-US-EmmaMultilingualNeural", "speed": 1.0}
+{"input": "Text to read", "voice": "en-US-EmmaMultilingualNeural", "gender": "female", "speed": 1.0}
 ```
 
 **Receive**:
