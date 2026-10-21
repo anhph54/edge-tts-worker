@@ -320,7 +320,13 @@ async function handleSpeech(request: Request, env: Env, ctx: ExecutionContext): 
         await writer.write(audioData);
       }
     } catch (e) {
-      console.error("TTS stream error:", e);
+      //console.error("TTS stream error:", e);
+      const error = e instanceof Error ? e : new Error(String(e));
+      console.error("TTS_STREAM_FAILED", {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
     } finally {
       await writer.close();
     }
