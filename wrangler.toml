@@ -5,3 +5,10 @@ workers_dev = false
 
 [vars]
 # API_KEY = "" # uncomment and set to enable auth
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = true
