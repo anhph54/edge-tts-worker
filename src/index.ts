@@ -7,8 +7,12 @@ const TRUSTED_CLIENT_TOKEN = "6A5AA1D4EAFF4E9FB37E23D68491D6F4";
 const CHROMIUM_FULL_VERSION = "143.0.3650.75";
 const CHROMIUM_MAJOR_VERSION = CHROMIUM_FULL_VERSION.split(".")[0];
 const SEC_MS_GEC_VERSION = `1-${CHROMIUM_FULL_VERSION}`;
+//const BASE_URL = "speech.platform.bing.com/consumer/speech/synthesize/readaloud";
+//const WSS_URL = `wss://${BASE_URL}/edge/v1?TrustedClientToken=${TRUSTED_CLIENT_TOKEN}`;
+//const VOICE_LIST_URL = `https://${BASE_URL}/voices/list?trustedclienttoken=${TRUSTED_CLIENT_TOKEN}`;
 const BASE_URL = "speech.platform.bing.com/consumer/speech/synthesize/readaloud";
-const WSS_URL = `wss://${BASE_URL}/edge/v1?TrustedClientToken=${TRUSTED_CLIENT_TOKEN}`;
+const WSS_URL = "wss://api.msedgeservices.com/tts/cognitiveservices/websocket/v1"
+    + `?Ocp-Apim-Subscription-Key=${TRUSTED_CLIENT_TOKEN}`;
 const VOICE_LIST_URL = `https://${BASE_URL}/voices/list?trustedclienttoken=${TRUSTED_CLIENT_TOKEN}`;
 const WIN_EPOCH = 11644473600;
 const S_TO_NS = 1e9;
